@@ -43,6 +43,9 @@ struct _AVLTree {
 	unsigned int num_nodes;
 };
 
+/* Null value that can be returned without creating a local variable */
+static const AVLTreeValue avl_tree_null_value = AVL_TREE_NULL;
+
 AVLTree *avl_tree_new(AVLTreeCompareFunc compare_func)
 {
 	AVLTree *new_tree;
@@ -488,7 +491,7 @@ AVLTreeValue avl_tree_lookup(AVLTree *tree, AVLTreeKey key)
 	node = avl_tree_lookup_node(tree, key);
 
 	if (node == NULL) {
-		return AVL_TREE_NULL;
+		return avl_tree_null_value;
 	} else {
 		return node->value;
 	}
@@ -529,7 +532,7 @@ unsigned int avl_tree_num_entries(AVLTree *tree)
 }
 
 static void avl_tree_to_array_add_subtree(AVLTreeNode *subtree,
-                                          AVLTreeValue *array, int *index)
+                                          AVLTreeKey *array, int *index)
 {
 	if (subtree == NULL) {
 		return;
@@ -548,13 +551,13 @@ static void avl_tree_to_array_add_subtree(AVLTreeNode *subtree,
 	                              array, index);
 }
 
-AVLTreeValue *avl_tree_to_array(AVLTree *tree)
+AVLTreeKey *avl_tree_to_array(AVLTree *tree)
 {
-	AVLTreeValue *array;
+	AVLTreeKey *array;
 	int index;
 
 	/* Allocate the array */
-	array = malloc(sizeof(AVLTreeValue) * tree->num_nodes);
+	array = malloc(sizeof(AVLTreeKey) * tree->num_nodes);
 
 	if (array == NULL) {
 		return NULL;

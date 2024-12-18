@@ -44,6 +44,9 @@ struct _RBTree {
 	int num_nodes;
 };
 
+/* Null value that can be returned without creating a local variable */
+static const RBTreeValue rb_tree_null_value = RB_TREE_NULL;
+
 static RBTreeNodeSide rb_tree_node_side(RBTreeNode *node)
 {
 	if (node->parent->children[RB_TREE_NODE_LEFT] == node) {
@@ -341,7 +344,7 @@ RBTreeNode *rb_tree_insert(RBTree *tree, RBTreeKey key, RBTreeValue value)
 		parent = *rover;
 
 		/* Choose which path to go down, left or right child */
-		if (tree->compare_func(value, (*rover)->value) < 0) {
+		if (tree->compare_func(key, (*rover)->key) < 0) {
 			side = RB_TREE_NODE_LEFT;
 		} else {
 			side = RB_TREE_NODE_RIGHT;
@@ -398,7 +401,7 @@ RBTreeValue rb_tree_lookup(RBTree *tree, RBTreeKey key)
 	node = rb_tree_lookup_node(tree, key);
 
 	if (node == NULL) {
-		return RB_TREE_NULL;
+		return rb_tree_null_value;
 	} else {
 		return node->value;
 	}
@@ -453,7 +456,7 @@ RBTreeNode *rb_tree_node_parent(RBTreeNode *node)
 	return node->parent;
 }
 
-RBTreeValue *rb_tree_to_array(RBTree *tree)
+RBTreeKey *rb_tree_to_array(RBTree *tree)
 {
 	/* TODO */
 	return NULL;

@@ -65,6 +65,10 @@ extern "C" {
  */
 typedef struct _AVLTree AVLTree;
 
+#ifdef TEST_ALTERNATE_VALUE_TYPES
+#include "alt-value-type.h"
+#else
+
 /**
  * A key for an @ref AVLTree.
  */
@@ -79,6 +83,8 @@ typedef void *AVLTreeValue;
  * A null @ref AVLTreeValue.
  */
 #define AVL_TREE_NULL ((void *) 0)
+
+#endif /* #ifndef TEST_ALTERNATE_VALUE_TYPES */
 
 /**
  * A node in an AVL tree.
@@ -109,7 +115,7 @@ typedef enum {
  *                         be sorted before value1, zero if the two keys
  *                         are equal.
  */
-typedef int (*AVLTreeCompareFunc)(AVLTreeValue value1, AVLTreeValue value2);
+typedef int (*AVLTreeCompareFunc)(AVLTreeKey value1, AVLTreeKey value2);
 
 /**
  * Create a new AVL tree.
@@ -242,11 +248,11 @@ int avl_tree_subtree_height(AVLTreeNode *node);
  *
  * @param tree            The tree.
  * @return                A newly allocated C array containing all the keys
- *                        in the tree, in order.  The length of the array
+ *                        in the tree, in order. The length of the array
  *                        is equal to the number of entries in the tree
  *                        (see @ref avl_tree_num_entries).
  */
-AVLTreeValue *avl_tree_to_array(AVLTree *tree);
+AVLTreeKey *avl_tree_to_array(AVLTree *tree);
 
 /**
  * Retrieve the number of entries in the tree.

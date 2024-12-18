@@ -42,6 +42,9 @@ struct _Trie {
 	TrieNode *root_node;
 };
 
+/* Null value that can be returned without creating a local variable */
+static const TrieValue trie_null_value = TRIE_NULL;
+
 Trie *trie_new(void)
 {
 	Trie *new_trie;
@@ -57,53 +60,25 @@ Trie *trie_new(void)
 	return new_trie;
 }
 
-static void trie_free_list_push(TrieNode **list, TrieNode *node)
+static void free_node_recursive(TrieNode *node)
 {
-	node->data = *list;
-	*list = node;
-}
+	int i;
 
-static TrieNode *trie_free_list_pop(TrieNode **list)
-{
-	TrieNode *result;
+	if (node == NULL) {
+		return;
+	}
 
-	result = *list;
-	*list = result->data;
+	/* Free all subnodes */
+	for (i = 0; i < 256; ++i) {
+		free_node_recursive(node->next[i]);
+	}
 
-	return result;
+	free(node);
 }
 
 void trie_free(Trie *trie)
 {
-	TrieNode *free_list;
-	TrieNode *node;
-	int i;
-
-	free_list = NULL;
-
-	/* Start with the root node */
-	if (trie->root_node != NULL) {
-		trie_free_list_push(&free_list, trie->root_node);
-	}
-
-	/* Go through the free list, freeing nodes.  We add new nodes as
-	 * we encounter them; in this way, all the nodes are freed
-	 * non-recursively. */
-	while (free_list != NULL) {
-		node = trie_free_list_pop(&free_list);
-
-		/* Add all children of this node to the free list */
-		for (i = 0; i < 256; ++i) {
-			if (node->next[i] != NULL) {
-				trie_free_list_push(&free_list, node->next[i]);
-			}
-		}
-
-		/* Free the node */
-		free(node);
-	}
-
-	/* Free the trie */
+	free_node_recursive(trie->root_node);
 	free(trie);
 }
 
@@ -201,6 +176,11 @@ static void trie_insert_rollback(Trie *trie, unsigned char *key)
 	}
 }
 
+static int trie_value_is_null(TrieValue *v)
+{
+	return !memcmp(v, &trie_null_value, sizeof(TrieValue));
+}
+
 int trie_insert(Trie *trie, char *key, TrieValue value)
 {
 	TrieNode **rover;
@@ -209,7 +189,7 @@ int trie_insert(Trie *trie, char *key, TrieValue value)
 	int c;
 
 	/* Cannot insert NULL values */
-	if (value == TRIE_NULL) {
+	if (trie_value_is_null(&value)) {
 		return 0;
 	}
 
@@ -218,7 +198,7 @@ int trie_insert(Trie *trie, char *key, TrieValue value)
 
 	/* Already in the tree? If so, replace the existing value and
 	 * return success. */
-	if (node != NULL && node->data != TRIE_NULL) {
+	if (node != NULL && !trie_value_is_null(&node->data)) {
 		node->data = value;
 		return 1;
 	}
@@ -247,7 +227,7 @@ int trie_insert(Trie *trie, char *key, TrieValue value)
 				return 0;
 			}
 
-			node->data = TRIE_NULL;
+			node->data = trie_null_value;
 
 			/* Link in to the trie */
 			*rover = node;
@@ -284,7 +264,7 @@ int trie_insert_binary(Trie *trie, unsigned char *key, int key_length,
 	int p, c;
 
 	/* Cannot insert NULL values */
-	if (value == TRIE_NULL) {
+	if (trie_value_is_null(&value)) {
 		return 0;
 	}
 
@@ -293,7 +273,7 @@ int trie_insert_binary(Trie *trie, unsigned char *key, int key_length,
 
 	/* Already in the tree? If so, replace the existing value and
 	 * return success. */
-	if (node != NULL && node->data != TRIE_NULL) {
+	if (node != NULL && !trie_value_is_null(&node->data)) {
 		node->data = value;
 		return 1;
 	}
@@ -321,7 +301,7 @@ int trie_insert_binary(Trie *trie, unsigned char *key, int key_length,
 				return 0;
 			}
 
-			node->data = TRIE_NULL;
+			node->data = trie_null_value;
 
 			/* Link in to the trie */
 			*rover = node;
@@ -360,8 +340,8 @@ int trie_remove_binary(Trie *trie, unsigned char *key, int key_length)
 	/* Find the end node and remove the value */
 	node = trie_find_end_binary(trie, key, key_length);
 
-	if (node != NULL && node->data != TRIE_NULL) {
-		node->data = TRIE_NULL;
+	if (node != NULL && !trie_value_is_null(&node->data)) {
+		node->data = trie_null_value;
 	} else {
 		return 0;
 	}
@@ -428,8 +408,8 @@ int trie_remove(Trie *trie, char *key)
 	/* Find the end node and remove the value */
 	node = trie_find_end(trie, key);
 
-	if (node != NULL && node->data != TRIE_NULL) {
-		node->data = TRIE_NULL;
+	if (node != NULL && !trie_value_is_null(&node->data)) {
+		node->data = trie_null_value;
 	} else {
 		return 0;
 	}
@@ -494,7 +474,7 @@ TrieValue trie_lookup(Trie *trie, char *key)
 	if (node != NULL) {
 		return node->data;
 	} else {
-		return TRIE_NULL;
+		return trie_null_value;
 	}
 }
 
@@ -507,7 +487,7 @@ TrieValue trie_lookup_binary(Trie *trie, unsigned char *key, int key_length)
 	if (node != NULL) {
 		return node->data;
 	} else {
-		return TRIE_NULL;
+		return trie_null_value;
 	}
 }
 

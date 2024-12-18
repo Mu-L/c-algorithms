@@ -65,6 +65,10 @@ extern "C" {
  */
 typedef struct _RBTree RBTree;
 
+#ifdef TEST_ALTERNATE_VALUE_TYPES
+#include "alt-value-type.h"
+#else
+
 /**
  * A key for an @ref RBTree.
  */
@@ -79,6 +83,8 @@ typedef void *RBTreeValue;
  * A null @ref RBTreeValue.
  */
 #define RB_TREE_NULL ((void *) 0)
+
+#endif /* #ifndef TEST_ALTERNATE_VALUE_TYPES */
 
 /**
  * A node in a red-black tree.
@@ -100,14 +106,14 @@ typedef struct _RBTreeNode RBTreeNode;
  *                         be sorted before data1, zero if the two keys
  *                         are equal.
  */
-typedef int (*RBTreeCompareFunc)(RBTreeValue data1, RBTreeValue data2);
+typedef int (*RBTreeCompareFunc)(RBTreeKey data1, RBTreeKey data2);
 
 /**
  * Each node in a red-black tree is either red or black.
  */
 typedef enum {
 	RB_TREE_NODE_RED,
-	RB_TREE_NODE_BLACK,
+	RB_TREE_NODE_BLACK
 } RBTreeNodeColor;
 
 /**
@@ -253,7 +259,7 @@ int rb_tree_subtree_height(RBTreeNode *node);
  *                        is equal to the number of entries in the tree
  *                        (see @ref rb_tree_num_entries).
  */
-RBTreeValue *rb_tree_to_array(RBTree *tree);
+RBTreeKey *rb_tree_to_array(RBTree *tree);
 
 /**
  * Retrieve the number of entries in the tree.

@@ -3,7 +3,7 @@ name: Continuous Integration
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  check_style:
+  check_style_etc:
     runs-on: ubuntu-latest
 
     steps:
@@ -13,23 +13,46 @@ jobs:
         sudo apt -q install clang-format
     - uses: actions/checkout@v4
     - name: Check formatting
+      if: '!cancelled()'
       run: |
         clang-format -i */*.[ch]
-        if git diff | grep ""; then
-          echo
-          echo "*** Formatting errors detected by clang-format."
-          echo "*** Please apply the above diff or run:"
-          echo "    clang-format -i */*.[ch]"
-          echo
+        git diff > formatting-fixes.diff
+        if ! grep "" formatting-fixes.diff; then
+          rm -f formatting-fixes.diff
+        else
+          (echo "Formatting errors detected by clang-format. Please run" \
+                "\`make format\` or apply formatting-fixes.diff below.";
+           echo) >> $GITHUB_STEP_SUMMARY
           false
         fi
-    - name: Check comment style
+    - uses: actions/upload-artifact@v4
+      if: '!cancelled()'
+      with:
+        if-no-files-found: ignore
+        name: formatting-fixes.diff
+        path: formatting-fixes.diff
+    - name: Check C89 compliance
+      if: '!cancelled()'
+      env:
+        CFLAGS: "-O0 -Werror -std=c89 -pedantic -Isrc"
       run: |
-        if grep " //" */*.[ch]; then
-          echo
-          echo "*** C++-style comments were detected in the above lines."
-          echo "*** Please change to use /* ... */ -style comments."
-          echo
+        if ! gcc $CFLAGS -c */*.c; then
+          (echo "Code does not conform to ANSI C. Make sure not to use" \
+                "features from later standards, including C++-style " \
+                "// comments.";
+           echo) >> $GITHUB_STEP_SUMMARY
+          false
+        fi
+    - name: Check value types can be redefined
+      if: '!cancelled()'
+      env:
+        CFLAGS: "-O0 -Werror -DTEST_ALTERNATE_VALUE_TYPES"
+      run: |
+        if ! gcc $CFLAGS -c src/*.c; then
+          (echo "Compile failed when key/value types were redefined to" \
+                "something different from a void pointer. Compile with" \
+                "-DTEST_ALTERNATE_VALUE_TYPES to see the error.";
+           echo) >> $GITHUB_STEP_SUMMARY
           false
         fi
 
